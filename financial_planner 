@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Futures Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #22253c;
+            --text-color: #e5e5e5;
+            --accent-color: #0f3460;
+            --positive-color: #4CAF50;
+            --negative-color: #F44336;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            margin-top: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .header-item {
+            background-color: var(--accent-color);
+            padding: 15px 20px;
+            border-radius: 15px;
+            margin: 5px;
+            flex-grow: 1;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .asset-container, .holdings-container, .market-news, .advisor-panel {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 5px;
+        }
+        
+        h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .advisor-panel {
+            background-color: #33364f;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .market-news-content {
+            background-color: var(--bg-color);
+            padding: 15px;
+            border-radius: 12px;
+            height: 150px;
+            overflow-y: auto;
+        }
+
+        .news-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+            font-size: 0.9rem;
+        }
+
+        .news-item:last-child {
+            border-bottom: none;
+        }
+
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .asset-card {
+            background-color: var(--bg-color);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .asset-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .asset-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+        
+        .asset-card p {
+            font-size: 0.9rem;
+            color: #b5b5c5;
+            margin-bottom: 10px;
+        }
+
+        .asset-card .price-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .asset-card .price-info .change-indicator {
+            font-size: 0.8rem;
+            margin-left: 10px;
+            font-weight: normal;
+        }
+        
+        .asset-card label {
+            display: block;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .asset-card input[type="number"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: var(--text-color);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+        }
+        
+        .btn-buy {
+            background-color: var(--positive-color);
+            color: white;
+            flex-grow: 1;
+        }
+        
+        .btn-sell {
+            background-color: var(--negative-color);
+            color: white;
+            flex-grow: 1;
+        }
+        
+        .btn-sell-all {
+            background-color: var(--negative-color);
+            color: white;
+            flex-grow: 1;
+        }
+
+        .btn-next-month, .btn-start-over, .btn-next-year, .btn-tutorial {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .holdings-list {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .holding-item {
+            background-color: var(--bg-color);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .holding-item span {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .holding-item .value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .holding-item .change {
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .positive-change { color: var(--positive-color); }
+        .negative-change { color: var(--negative-color); }
+
+        .game-controls {
+            text-align: center;
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        
+        .final-report-modal, .welcome-modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .report-content, .welcome-content {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .welcome-content {
+            text-align: left;
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .report-content h2, .welcome-content h2 {
+            font-size: 2.5rem;
+            color: var(--text-color);
+            border-bottom: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .welcome-content p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .report-content p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .report-content .final-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        
+        .message-box {
+            background-color: #444;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            background-color: #1a1a2e;
+            padding: 15px;
+            border-radius: 15px;
+            height: 300px; 
+            position: relative;
+        }
+        
+        .chart-container canvas {
+            background-color: #22253c;
+            border-radius: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sell-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .sell-controls input {
+            flex-grow: 1;
+            min-width: 0;
+            padding: 8px;
+            height: 44px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+        
+        .sell-controls button {
+            height: 44px;
+            padding: 10px; 
+        }
+        
+        .btn-sell-all {
+            padding: 10px !important; 
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 20px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .header {
+                flex-direction: column;
+            }
+            .header-item {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .game-controls {
+                flex-direction: column;
+            }
+            .sell-controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .sell-controls input {
+                flex-basis: 100%;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Welcome/Tutorial Modal -->
+<div id="welcome-modal" class="welcome-modal" style="display: flex;">
+    <div class="welcome-content">
+        <h2>Welcome to the Financial Futures Simulator!</h2>
+        <p>This is a game designed to help you understand the basics of personal finance and investment over a **5-year period**.</p>
+        
+        <h3>Game Objective</h3>
+        <p>Your goal is to grow your initial **$10,000** by making smart investment decisions over 60 simulated months (5 years). At the end, you'll see a final report of your performance.</p>
+        
+        <h3>How to Play</h3>
+        <ul>
+            <li><strong>Initial Capital:</strong> You start with **$10,000** in cash. This is the only resource you have to invest.</li>
+            <li><strong>Available Assets:</strong> Below are the financial assets you can invest in, each with its own characteristics (risk, volatility, growth).</li>
+            <li><strong>Buying & Selling:</strong>
+                <ul>
+                    <li>Use the **'Amount ($)'** input fields to specify how much you want to buy or sell.</li>
+                    <li>Click the **'Buy'** button to purchase units of an asset. A 1% transaction fee is applied to all trades.</li>
+                    <li>Once you own an asset, it will appear in the **'Your Holdings'** section. You can sell it from there.</li>
+                </ul>
+            </li>
+            <li><strong>Time Progression:</strong>
+                <ul>
+                    <li>Click **'Next Month'** to advance the game by one month. Asset prices will change, and new market news may appear.</li>
+                    <li>Click **'Next Year'** to advance the game by one full year (12 months) at once.</li>
+                </ul>
+            </li>
+            <li><strong>Market News:</strong> Keep an eye on the **Market News** section. It will provide clues about what's happening in the simulated economy and can influence your decisions.</li>
+            <li><strong>Portfolio Metrics:</strong> The header shows key metrics: your cash balance, total portfolio value, diversification, and overall risk. These are updated every month and can help you track your progress.</li>
+        </ul>
+        
+        <p class="text-center mt-8">Good luck! The world of finance awaits.</p>
+        <div class="flex justify-center mt-8">
+            <button id="start-game-btn" class="btn-next-month">Start Game</button>
+        </div>
+    </div>
+</div>
+
+<div class="game-container hidden">
+    <h1>Financial Futures Simulator</h1>
+    <div class="header">
+        <div class="header-item">
+            <span id="current-date">January 2024</span>
+        </div>
+        <div class="header-item">
+            <span id="cash-balance">Cash: $10,000.00</span>
+        </div>
+        <div class="header-item">
+            <span id="portfolio-value">Portfolio Value: $0.00</span>
+        </div>
+        <div class="header-item">
+            <span id="diversification-score">Diversification: N/A</span>
+        </div>
+        <div class="header-item">
+            <span id="risk-score">Portfolio Risk: N/A</span>
+        </div>
+    </div>
+
+    <div class="market-news">
+        <h2>Market News</h2>
+        <div id="market-news-content" class="market-news-content">
+            <p class="news-item">Welcome to the Financial Futures Simulator! A new simulation has begun.</p>
+        </div>
+    </div>
+
+    <div class="advisor-panel">
+        <h3>Market Advisor</h3>
+        <p id="advisor-tip">Get started by reviewing the assets and making your first investment!</p>
+    </div>
+
+    <div class="asset-container">
+        <h2>Available Assets</h2>
+        <div class="asset-grid">
+            <!-- Asset cards will be generated here by JavaScript -->
+        </div>
+    </div>
+
+    <div class="holdings-container">
+        <h2>Your Holdings</h2>
+        <ul id="holdings-list" class="holdings-list">
+            <!-- Holdings will be displayed here by JavaScript -->
+        </ul>
+        <div class="chart-container">
+            <h3>Portfolio Performance</h3>
+            <canvas id="portfolioChart"></canvas>
+        </div>
+    </div>
+
+    <div id="message-box" class="message-box"></div>
+
+    <div class="game-controls">
+        <button id="next-month-btn" class="btn-next-month">Next Month</button>
+        <button id="next-year-btn" class="btn-next-year">Next Year</button>
+        <button id="start-over-btn" class="btn-start-over">Start Over</button>
+    </div>
+
+</div>
+
+<!-- Final Report Modal -->
+<div id="final-report-modal" class="final-report-modal">
+    <div class="report-content">
+        <h2>5-Year Report</h2>
+        <p>Congratulations, you have completed the 5-year simulation!</p>
+
+        <div id="final-report-summary" class="text-left text-gray-700 dark:text-gray-300"></div>
+
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+        
+        <p>Final Portfolio Value: <span id="final-value-display" class="final-value"></span></p>
+        <p>Total Return: <span id="total-return-display" class="final-value"></span></p>
+        <button id="restart-btn" class="btn-start-over">Start Over</button>
+    </div>
+</div>
+
+
+<script>
+    // Constants for game rules and realism factors
+    const STARTING_CASH = 10000;
+    const TOTAL_MONTHS = 60; // 5 years * 12 months
+    const MONTHLY_INFLATION_RATE = 0.0025; // 0.25% monthly inflation
+    const TRANSACTION_FEE_RATE = 0.01; // 1% transaction fee
+
+    // Game state variables
+    let gameData = {};
+
+    // Asset data with simulated properties
+    const ASSETS = [
+        {
+            name: "S&P 500 ETF",
+            info: "Broad market index fund. Low volatility, steady growth.",
+            startingPrice: 100,
+            currentPrice: 100,
+            volatility: 0.05,
+            growthRate: 0.008,
+            correlation: 'positive',
+            risk: 'low'
+        },
+        {
+            name: "Tech Stocks",
+            info: "High-growth stocks. High volatility, potential for big gains.",
+            startingPrice: 50,
+            currentPrice: 50,
+            volatility: 0.15,
+            growthRate: 0.02,
+            correlation: 'positive',
+            risk: 'high'
+        },
+        {
+            name: "Cryptocurrency",
+            info: "Highly speculative digital currency. Extreme volatility and potential for dramatic shifts.",
+            startingPrice: 200,
+            currentPrice: 200,
+            volatility: 0.35,
+            growthRate: 0.01,
+            correlation: 'neutral',
+            risk: 'very-high'
+        },
+        {
+            name: "Real Estate",
+            info: "A long-term, stable asset with low volatility. Value changes are gradual.",
+            startingPrice: 5000,
+            currentPrice: 5000,
+            volatility: 0.015,
+            growthRate: 0.006,
+            correlation: 'neutral',
+            risk: 'low'
+        },
+        {
+            name: "Fixed Deposit",
+            info: "Zero volatility, fixed return. A safe haven.",
+            startingPrice: 1000,
+            currentPrice: 1000,
+            volatility: 0,
+            growthRate: 0.004,
+            correlation: 'neutral',
+            risk: 'very-low'
+        },
+        {
+            name: "Gold",
+            info: "A traditional 'safe haven' asset. Often moves opposite to the stock market.",
+            startingPrice: 1800,
+            currentPrice: 1800,
+            volatility: 0.02,
+            growthRate: 0.002,
+            correlation: 'negative',
+            risk: 'low'
+        },
+        {
+            name: "Silver",
+            info: "Similar to gold, but with higher volatility due to industrial demand.",
+            startingPrice: 25,
+            currentPrice: 25,
+            volatility: 0.04,
+            growthRate: 0.003,
+            correlation: 'negative',
+            risk: 'medium'
+        }
+    ];
+
+    // Market event data
+    const MARKET_EVENTS = [
+        {
+            name: "Tech Boom",
+            message: "Massive breakthroughs in AI drive tech stocks to new highs. Investors are pouring money into the sector!",
+            advisorTip: "A tech boom increases the growth rate for technology-related assets. This is a great time to buy into high-growth potential, but remember to watch for signs of overvaluation.",
+            effects: [
+                { asset: "Tech Stocks", growthModifier: 0.02, volatilityModifier: -0.05 },
+                { asset: "S&P 500 ETF", growthModifier: 0.005 }
+            ]
+        },
+        {
+            name: "Global Recession",
+            message: "Central banks raise interest rates to combat inflation. The resulting economic slowdown sends shockwaves through the market.",
+            advisorTip: "During a recession, market-wide indices and speculative assets often fall. Safe-haven assets like gold and fixed deposits tend to perform better as investors seek stability.",
+            effects: [
+                { asset: "S&P 500 ETF", growthModifier: -0.02, volatilityModifier: 0.05 },
+                { asset: "Tech Stocks", growthModifier: -0.03, volatilityModifier: 0.05 },
+                { asset: "Gold", growthModifier: 0.005, volatilityModifier: -0.01 }
+            ]
+        },
+        {
+            name: "Crypto Regulation",
+            message: "Governments announce new regulations on cryptocurrencies, causing market panic and a major sell-off.",
+            advisorTip: "New regulations can bring both risk and opportunity to a new asset class. The initial shock can cause prices to drop, but in the long run, it may lead to greater stability.",
+            effects: [
+                { asset: "Cryptocurrency", growthModifier: -0.05, volatilityModifier: 0.1 }
+            ]
+        },
+        {
+            name: "Inflation Spike",
+            message: "Unexpectedly high inflation numbers rock the economy. Investors seek out 'real' assets to protect their wealth.",
+            advisorTip: "When inflation rises, cash loses value. Real assets like real estate and commodities like gold tend to perform well as they are seen as a hedge against inflation. This is a crucial time to be invested!",
+            effects: [
+                { asset: "Real Estate", growthModifier: 0.01 },
+                { asset: "Fixed Deposit", growthModifier: -0.002 },
+                { asset: "Gold", growthModifier: 0.01 }
+            ]
+        }
+    ];
+
+    // DOM Elements
+    const gameContainerEl = document.querySelector('.game-container');
+    const welcomeModal = document.getElementById('welcome-modal');
+    const startGameBtn = document.getElementById('start-game-btn');
+    const cashBalanceEl = document.getElementById('cash-balance');
+    const portfolioValueEl = document.getElementById('portfolio-value');
+    const currentDateEl = document.getElementById('current-date');
+    const assetGridEl = document.querySelector('.asset-grid');
+    const holdingsListEl = document.getElementById('holdings-list');
+    const nextMonthBtn = document.getElementById('next-month-btn');
+    const nextYearBtn = document.getElementById('next-year-btn');
+    const messageBoxEl = document.getElementById('message-box');
+    const finalReportModal = document.getElementById('final-report-modal');
+    const finalValueDisplayEl = document.getElementById('final-value-display');
+    const totalReturnDisplayEl = document.getElementById('total-return-display');
+    const restartBtn = document.getElementById('restart-btn');
+    const newsContentEl = document.getElementById('market-news-content');
+    const advisorTipEl = document.getElementById('advisor-tip');
+    const diversificationScoreEl = document.getElementById('diversification-score');
+    const riskScoreEl = document.getElementById('risk-score');
+    const finalReportSummaryEl = document.getElementById('final-report-summary');
+    const portfolioChartCanvas = document.getElementById('portfolioChart');
+    const startOverBtn = document.getElementById('start-over-btn');
+    
+    // Chart.js instance for the final report
+    let performanceChartInstance = null;
+    let portfolioChartInstance = null;
+
+    // --- Core Game Functions ---
+
+    // Initializes the game state and UI
+    function initGame() {
+        gameData = {
+            cash: STARTING_CASH,
+            holdings: {},
+            totalMonthsPassed: 0,
+            startingPortfolioValue: STARTING_CASH,
+            finalPortfolioValue: 0,
+            newsLog: [],
+            assetHistory: {},
+            yearlyPortfolioValues: [STARTING_CASH],
+            portfolioHistory: [STARTING_CASH]
+        };
+
+        // Reset asset prices and initialize history
+        ASSETS.forEach(asset => {
+            asset.currentPrice = asset.startingPrice;
+            asset.previousPrice = asset.startingPrice;
+            gameData.assetHistory[asset.name] = [asset.startingPrice];
+        });
+        
+        // Reset news log
+        newsContentEl.innerHTML = '<p class="news-item">Welcome to the Financial Futures Simulator! A new simulation has begun.</p>';
+        gameData.newsLog = [{ message: "Welcome to the Financial Futures Simulator! A new simulation has begun."}];
+
+        updateUI();
+        generateAssetCards();
+        finalReportModal.style.display = 'none';
+        nextMonthBtn.disabled = false;
+        nextYearBtn.disabled = false;
+        startOverBtn.disabled = false;
+        gameContainerEl.classList.remove('hidden');
+    }
+
+    // Displays a temporary message to the user
+    function showMessage(message, isError = false) {
+        messageBoxEl.textContent = message;
+        messageBoxEl.style.backgroundColor = isError ? varToCssValue('--negative-color') : varToCssValue('--positive-color');
+        messageBoxEl.style.display = 'block';
+        setTimeout(() => {
+            messageBoxEl.style.display = 'none';
+        }, 3000);
+    }
+
+    // Helper to get CSS variable value
+    function varToCssValue(variable) {
+        return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+    }
+
+    // Updates all dynamic parts of the UI
+    function updateUI() {
+        const date = new Date(2024, gameData.totalMonthsPassed, 1);
+        const month = date.toLocaleString('default', { month: 'long' });
+        const year = date.getFullYear();
+
+        currentDateEl.textContent = `${month} ${year}`;
+        cashBalanceEl.textContent = `Cash: $${gameData.cash.toFixed(2)}`;
+
+        let totalPortfolioValue = gameData.cash;
+        let riskSum = 0;
+        let holdingCount = 0;
+
+        for (const assetName in gameData.holdings) {
+            const holding = gameData.holdings[assetName];
+            const assetData = ASSETS.find(a => a.name === assetName);
+            if (assetData) {
+                holding.value = holding.units * assetData.currentPrice;
+                totalPortfolioValue += holding.value;
+                holdingCount++;
+
+                const riskValue = { 'very-low': 1, 'low': 2, 'medium': 3, 'high': 4, 'very-high': 5 }[assetData.risk];
+                riskSum += riskValue * holding.value;
+            }
+        }
+        
+        gameData.finalPortfolioValue = totalPortfolioValue;
+        portfolioValueEl.textContent = `Portfolio Value: $${totalPortfolioValue.toFixed(2)}`;
+
+        const diversificationScore = holdingCount > 0 ? (holdingCount / ASSETS.length) * 100 : 0;
+        diversificationScoreEl.textContent = `Diversification: ${diversificationScore.toFixed(0)}%`;
+        
+        const portfolioRisk = totalPortfolioValue > 0 ? (riskSum / (totalPortfolioValue - gameData.cash)) : 0;
+        let riskText = 'N/A';
+        if (portfolioRisk > 0) {
+            if (portfolioRisk <= 1.5) riskText = 'Very Low';
+            else if (portfolioRisk <= 2.5) riskText = 'Low';
+            else if (portfolioRisk <= 3.5) riskText = 'Medium';
+            else if (portfolioRisk <= 4.5) riskText = 'High';
+            else riskText = 'Very High';
+        }
+        riskScoreEl.textContent = `Portfolio Risk: ${riskText}`;
+
+        generateAssetCards();
+        renderHoldings();
+        renderNews();
+        updateAdvisorTip();
+        drawPortfolioChart();
+    }
+
+    // Renders the list of user's current holdings
+    function renderHoldings() {
+        holdingsListEl.innerHTML = '';
+        const holdingsExist = Object.keys(gameData.holdings).length > 0;
+
+        if (!holdingsExist) {
+            const emptyItem = document.createElement('li');
+            emptyItem.textContent = "You currently have no holdings.";
+            emptyItem.style.textAlign = 'center';
+            emptyItem.style.padding = '20px';
+            emptyItem.style.color = '#888';
+            holdingsListEl.appendChild(emptyItem);
+            return;
+        }
+
+        for (const assetName in gameData.holdings) {
+            const holding = gameData.holdings[assetName];
+            const li = document.createElement('li');
+            li.className = 'holding-item';
+            
+            const change = holding.value - holding.initialValue;
+            const changePercent = (change / holding.initialValue) * 100;
+            const changeClass = change >= 0 ? 'positive-change' : 'negative-change';
+            const changeText = `${change >= 0 ? '+' : ''}$${change.toFixed(2)} (${changePercent.toFixed(2)}%)`;
+            
+            li.innerHTML = `
+                <span>${assetName}</span>
+                <span class="value">$${holding.value.toFixed(2)}</span>
+                <span>Units: ${holding.units.toFixed(2)}</span>
+                <span class="change ${changeClass}">${changeText}</span>
+                <div class="sell-controls">
+                    <input type="number" id="sell-${assetName.replace(/\s+/g, '-')}-amount" min="0" value="0" placeholder="Amount ($)">
+                    <button class="btn-sell" data-asset="${assetName}">Sell</button>
+                    <button class="btn-sell-all" data-asset="${assetName}">Sell All</button>
+                </div>
+            `;
+            holdingsListEl.appendChild(li);
+        }
+
+        document.querySelectorAll('.btn-sell-all').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const assetName = e.target.dataset.asset;
+                sellAll(assetName);
+            });
+        });
+        document.querySelectorAll('.btn-sell').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const assetName = e.target.dataset.asset;
+                const inputId = `sell-${assetName.replace(/\s+/g, '-')}-amount`;
+                const amount = parseFloat(document.getElementById(inputId).value);
+                if (amount > 0) {
+                    sellAmount(assetName, amount);
+                }
+            });
+        });
+    }
+
+    function drawPortfolioChart() {
+        const ctx = portfolioChartCanvas.getContext('2d');
+        const labels = Array.from({ length: gameData.portfolioHistory.length }, (_, i) => `Month ${i}`);
+
+        if (portfolioChartInstance) {
+            portfolioChartInstance.destroy();
+        }
+
+        portfolioChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Portfolio Value',
+                    data: gameData.portfolioHistory,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.4,
+                    fill: true,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(100, 100, 100, 0.2)' },
+                        ticks: { color: 'rgb(100, 100, 100)' }
+                    },
+                    x: {
+                        grid: { color: 'rgba(100, 100, 100, 0.2)' },
+                        ticks: { color: 'rgb(100, 100, 100)' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Value: $${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function generateAssetCards() {
+        assetGridEl.innerHTML = '';
+        ASSETS.forEach(asset => {
+            const card = document.createElement('div');
+            card.className = 'asset-card';
+            
+            const monthlyChange = asset.currentPrice - (asset.previousPrice || asset.startingPrice);
+            const monthlyChangePercent = (monthlyChange / (asset.previousPrice || asset.startingPrice)) * 100;
+            const changeClass = monthlyChange >= 0 ? 'positive-change' : 'negative-change';
+            const changeText = `${monthlyChange >= 0 ? '+' : ''}${monthlyChangePercent.toFixed(2)}%`;
+
+            card.innerHTML = `
+                <h3>${asset.name}</h3>
+                <p>${asset.info}</p>
+                <div class="price-info">
+                    <span>Price: $${asset.currentPrice.toFixed(2)}</span>
+                    <span class="change-indicator ${changeClass}">(${changeText})</span>
+                </div>
+                <p>Risk: <span style="font-weight: bold; text-transform: capitalize;">${asset.risk}</span></p>
+                <label for="buy-${asset.name.replace(/\s+/g, '-')}-amount">Amount ($)</label>
+                <input type="number" id="buy-${asset.name.replace(/\s+/g, '-')}-amount" min="0" value="0">
+                <div class="button-group">
+                    <button class="btn-buy" data-asset="${asset.name}">Buy</button>
+                </div>
+            `;
+            assetGridEl.appendChild(card);
+        });
+
+        document.querySelectorAll('.btn-buy').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const assetName = e.target.dataset.asset;
+                const inputId = `buy-${assetName.replace(/\s+/g, '-')}-amount`;
+                const amount = parseFloat(document.getElementById(inputId).value);
+                if (amount > 0) {
+                    buyAsset(assetName, amount);
+                }
+            });
+        });
+    }
+
+    function renderNews() {
+        newsContentEl.innerHTML = '';
+        gameData.newsLog.slice().reverse().forEach(newsItem => {
+            const p = document.createElement('p');
+            p.className = 'news-item';
+            p.textContent = newsItem.message;
+            newsContentEl.appendChild(p);
+        });
+    }
+
+    function updateAdvisorTip(marketEvent = null) {
+        if (marketEvent) {
+            advisorTipEl.textContent = marketEvent.advisorTip;
+            return;
+        }
+
+        const holdingsCount = Object.keys(gameData.holdings).length;
+        if (gameData.totalMonthsPassed === 0) {
+            advisorTipEl.textContent = "A good start is to diversify your portfolio. Spreading your investments can help manage risk.";
+        } else if (holdingsCount === 0 && gameData.totalMonthsPassed > 1) {
+            advisorTipEl.textContent = "Remember that inflation erodes the value of cash. To grow your wealth, you must invest!";
+        } else {
+            const randomTip = Math.random();
+            if (randomTip < 0.2) {
+                advisorTipEl.textContent = "Risk and return are closely linked. High-risk assets can lead to big gains, but also big losses. Make sure your portfolio's risk level matches your goals.";
+            } else if (randomTip < 0.4) {
+                advisorTipEl.textContent = "Diversification is key! Spreading your investments across different assets can help reduce risk.";
+            } else if (randomTip < 0.6) {
+                advisorTipEl.textContent = "Keep an eye on the news! Major economic events, like inflation spikes or recessions, can dramatically change the market.";
+            } else if (randomTip < 0.8) {
+                advisorTipEl.textContent = "Don't forget about transaction fees. They can add up and reduce your profits, so plan your trades wisely.";
+            } else {
+                advisorTipEl.textContent = "Consider your portfolio's balance. Are you over-invested in a single asset? Rebalancing can help you manage risk and stay on track with your long-term strategy.";
+            }
+        }
+    }
+
+    function buyAsset(assetName, amount) {
+        const asset = ASSETS.find(a => a.name === assetName);
+        const fee = amount * TRANSACTION_FEE_RATE;
+        const totalCost = amount + fee;
+
+        if (totalCost > gameData.cash) {
+            showMessage("You don't have enough cash to cover the transaction and fees!", true);
+            return;
+        }
+        
+        const units = amount / asset.currentPrice;
+        if (units === 0) {
+            showMessage("Please enter a valid amount.", true);
+            return;
+        }
+
+        gameData.cash -= totalCost;
+        if (gameData.holdings[assetName]) {
+            gameData.holdings[assetName].units += units;
+            gameData.holdings[assetName].initialValue += amount;
+        } else {
+            gameData.holdings[assetName] = {
+                units: units,
+                initialValue: amount,
+                value: amount,
+                assetData: asset
+            };
+        }
+        updateUI();
+        showMessage(`Purchased ${units.toFixed(2)} units of ${assetName}. Fee: $${fee.toFixed(2)}.`);
+        document.getElementById(`buy-${assetName.replace(/\s+/g, '-')}-amount`).value = 0;
+    }
+
+    function sellAmount(assetName, amount) {
+        const holding = gameData.holdings[assetName];
+        if (!holding) {
+            return;
+        }
+        
+        const asset = ASSETS.find(a => a.name === assetName);
+        const totalValue = holding.units * asset.currentPrice;
+
+        if (amount > totalValue) {
+            showMessage("You cannot sell more than you own!", true);
+            return;
+        }
+        
+        const unitsToSell = amount / asset.currentPrice;
+        const fee = amount * TRANSACTION_FEE_RATE;
+        const netProceeds = amount - fee;
+
+        gameData.cash += netProceeds;
+        holding.units -= unitsToSell;
+        
+        if (holding.units <= 0.001) {
+            delete gameData.holdings[assetName];
+            showMessage(`Sold all remaining ${assetName}. Fee: $${fee.toFixed(2)}.`);
+        } else {
+            showMessage(`Sold $${amount.toFixed(2)} of ${assetName}. Fee: $${fee.toFixed(2)}.`);
+        }
+        updateUI();
+    }
+    
+    function sellAll(assetName) {
+        if (!gameData.holdings[assetName]) {
+            return;
+        }
+
+        const holding = gameData.holdings[assetName];
+        const fee = holding.value * TRANSACTION_FEE_RATE;
+        const netProceeds = holding.value - fee;
+
+        gameData.cash += netProceeds;
+        delete gameData.holdings[assetName];
+        updateUI();
+        showMessage(`Sold all ${assetName} for $${netProceeds.toFixed(2)}. Fee: $${fee.toFixed(2)}.`);
+    }
+
+    function nextMonth() {
+        if (gameData.totalMonthsPassed >= TOTAL_MONTHS) {
+            endGame();
+            return;
+        }
+
+        gameData.cash -= gameData.cash * MONTHLY_INFLATION_RATE;
+
+        let triggeredEvent = null;
+        if (Math.random() < 0.15) {
+            const event = MARKET_EVENTS[Math.floor(Math.random() * MARKET_EVENTS.length)];
+            gameData.newsLog.push({ message: `Breaking News: ${event.message}` });
+            event.effects.forEach(effect => {
+                const asset = ASSETS.find(a => a.name === effect.asset);
+                if (asset) {
+                    if (effect.growthModifier) asset.currentPrice *= (1 + effect.growthModifier);
+                    if (effect.volatilityModifier) asset.volatility += effect.volatilityModifier;
+                }
+            });
+            triggeredEvent = event;
+        }
+        
+        const sp500 = ASSETS.find(a => a.name === "S&P 500 ETF");
+        const sp500Change = (Math.random() - 0.5) * 2;
+        const marketChangeFactor = sp500.growthRate + (sp500Change * sp500.volatility);
+
+        ASSETS.forEach(asset => {
+            asset.previousPrice = asset.currentPrice;
+            let priceChange = 0;
+
+            if (asset.correlation === 'positive') {
+                const randomFactor = (Math.random() - 0.5) * 2;
+                priceChange = (asset.growthRate + (randomFactor * asset.volatility) + marketChangeFactor) * asset.currentPrice;
+            } else if (asset.correlation === 'negative') {
+                const randomFactor = (Math.random() - 0.5) * 2;
+                priceChange = (asset.growthRate + (randomFactor * asset.volatility) - marketChangeFactor * 1.5) * asset.currentPrice;
+            } else {
+                const randomFactor = (Math.random() - 0.5) * 2;
+                priceChange = (asset.growthRate + (randomFactor * asset.volatility)) * asset.currentPrice;
+            }
+
+            if (asset.name === "Fixed Deposit") {
+                priceChange = asset.growthRate * asset.currentPrice;
+            }
+            
+            asset.currentPrice += priceChange;
+            gameData.assetHistory[asset.name].push(asset.currentPrice);
+        });
+
+        let currentPortfolioValue = gameData.cash;
+        for (const assetName in gameData.holdings) {
+            const holding = gameData.holdings[assetName];
+            const assetData = ASSETS.find(a => a.name === assetName);
+            currentPortfolioValue += holding.units * assetData.currentPrice;
+        }
+        gameData.portfolioHistory.push(currentPortfolioValue);
+
+        gameData.totalMonthsPassed++;
+        updateUI();
+        if (triggeredEvent) {
+             updateAdvisorTip(triggeredEvent);
+        }
+
+        if (gameData.totalMonthsPassed % 12 === 0) {
+            gameData.yearlyPortfolioValues.push(gameData.finalPortfolioValue);
+        }
+
+        if (gameData.totalMonthsPassed >= TOTAL_MONTHS) {
+            endGame();
+        }
+    }
+
+    function nextYear() {
+        for (let i = 0; i < 12; i++) {
+            if (gameData.totalMonthsPassed < TOTAL_MONTHS) {
+                nextMonth();
+            } else {
+                break;
+            }
+        }
+    }
+
+    function endGame() {
+        let totalReturn = gameData.finalPortfolioValue - gameData.startingPortfolioValue;
+        const returnPercentage = (totalReturn / gameData.startingPortfolioValue) * 100;
+        
+        finalValueDisplayEl.textContent = `$${gameData.finalPortfolioValue.toFixed(2)}`;
+        totalReturnDisplayEl.textContent = `$${totalReturn.toFixed(2)} (${returnPercentage.toFixed(2)}%)`;
+        
+        let summaryHtml = `<h3 class="text-xl font-semibold mb-2 text-left">Year-by-Year Performance:</h3><ul>`;
+        const years = Array.from({length: 5}, (_, i) => 2024 + i);
+        let previousValue = gameData.yearlyPortfolioValues[0];
+        
+        for (let i = 0; i < years.length; i++) {
+            const year = years[i];
+            const endOfYearValue = gameData.yearlyPortfolioValues[i + 1] || gameData.finalPortfolioValue;
+            const yearlyReturn = ((endOfYearValue - previousValue) / previousValue) * 100;
+            const trend = yearlyReturn >= 0 ? 'grew' : 'decreased';
+            summaryHtml += `<li class="text-left leading-relaxed"><strong>${year}:</strong> Your portfolio ${trend} by ${Math.abs(yearlyReturn).toFixed(2)}%</li>`;
+            previousValue = endOfYearValue; // Update previousValue for the next iteration
+        }
+        summaryHtml += `</ul>`; 
+        finalReportSummaryEl.innerHTML = summaryHtml;
+
+        const chartData = {
+            labels: years,
+            datasets: [{
+                label: 'Portfolio Value',
+                data: gameData.yearlyPortfolioValues,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointHoverRadius: 8,
+                pointHoverBorderWidth: 2,
+                pointRadius: 6
+            }]
+        };
+
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: { color: 'rgba(100, 100, 100, 0.2)' },
+                    ticks: { color: 'rgb(100, 100, 100)' },
+                    title: {
+                        display: true,
+                        text: 'Portfolio Value ($)',
+                        color: 'rgb(100, 100, 100)'
+                    }
+                },
+                x: {
+                    grid: { color: 'rgba(100, 100, 100, 0.2)' },
+                    ticks: { color: 'rgb(100, 100, 100)' }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: 'rgb(100, 100, 100)' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                },
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeInOutQuad'
+            }
+        };
+
+        if (performanceChartInstance) {
+            performanceChartInstance.destroy();
+        }
+
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        performanceChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: chartOptions
+        });
+        
+        finalReportModal.style.display = 'flex';
+        nextMonthBtn.disabled = true;
+        nextYearBtn.disabled = true;
+        startOverBtn.disabled = false;
+    }
+
+    // Event Listeners
+    startGameBtn.addEventListener('click', () => {
+        welcomeModal.style.display = 'none';
+        initGame();
+    });
+
+    startOverBtn.addEventListener('click', () => {
+        gameContainerEl.classList.add('hidden');
+        welcomeModal.style.display = 'flex';
+    });
+    restartBtn.addEventListener('click', () => {
+        finalReportModal.style.display = 'none';
+        gameContainerEl.classList.add('hidden');
+        welcomeModal.style.display = 'flex';
+    });
+    nextMonthBtn.addEventListener('click', nextMonth);
+    nextYearBtn.addEventListener('click', nextYear);
+    
+    // Initial display
+    window.onload = function() {
+        welcomeModal.style.display = 'flex';
+    };
+
+</script>
+</body>
+</html>
